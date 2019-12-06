@@ -14,10 +14,10 @@ CiviCRM Contact Directory
 ### filters that should be available for use include:
 * Name (assuming to search on first OR last for Individuals and Org Name for Organizations)
 * Proximity search
-* IF a specialty attribute is included in the shortcode 
+* IF a specialty attribute is included in the shortcode
 
 ### Results listing should include:
-* Org name (Residential) / Display name (Provider)
+* Display Name
 * Street Address
 * Supplemental Address 1
 * City
