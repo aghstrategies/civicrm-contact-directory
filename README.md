@@ -14,7 +14,7 @@ CiviCRM Contact Directory
 ### filters that should be available for use include:
 * Name (assuming to search on first OR last for Individuals and Org Name for Organizations)
 * Proximity search
-* IF a specialty attribute is included in the shortcode - Specialty - This only appears to apply to Providers. This field set has the Specialty field: (https://www.pwsausa.org/wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fadmin%2Fcustom%2Fgroup%2Ffield&action=preview&reset=1&gid=11&id=60) but I can't find an equivalent for Residential organizations.
+* IF a specialty attribute is included in the shortcode 
 
 ### Results listing should include:
 * Org name (Residential) / Display name (Provider)
