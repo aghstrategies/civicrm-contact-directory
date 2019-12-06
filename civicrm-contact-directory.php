@@ -64,7 +64,7 @@ function civicrm_contact_directory_shortcode($atts) {
     if (!empty($specialty)) {
       foreach ($specialty as $id => $label) {
         // If a search has been run using the specialty field default to the specialty selected
-        if (isset($_POST['specialty']) && $_POST['specialty'] == $id) {
+        if (isset($_POST[$specialtyFilter]) && $_POST[$specialtyFilter] == $id) {
           $specialtyOptions .= "<option selected='selected' value={$id}>{$label}</option>";
         }
         else {
@@ -73,7 +73,7 @@ function civicrm_contact_directory_shortcode($atts) {
       }
     }
     $specialtyFilterHTML = '<label>Specialty</label></br>
-    <select name="specialty" id="specialty">
+    <select name="' . $specialtyFilter .'" id="' . $specialtyFilter . '" class="specialty">
       <option value="">Choose Specialty</option>' . $specialtyOptions . '
     </select>
     </br>';

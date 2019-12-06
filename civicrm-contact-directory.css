@@ -25,11 +25,11 @@
  text-decoration: underline;
 }
 
-#specialty,
+select.specialty,
 .displayName {
  width: 386px;
 }
 
-#specialty {
+select.specialty {
  height: 36px;
 }
