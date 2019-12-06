@@ -13,15 +13,15 @@
  padding-top: 20px;
 }
 
-.pwsacontact h3 {
+.civicontact h3 {
  margin-bottom: 0px;
 }
 
-.pwsacontact a h3 {
+.civicontact a h3 {
  color: #c41230;
 }
 
-.pwsacontact a h3:hover {
+.civicontact a h3:hover {
  text-decoration: underline;
 }
 
