@@ -97,8 +97,9 @@ function civicrm_contact_directory_shortcode($atts) {
   }
 
   $searchForm = '<form class="civiDirectoryForm" method = "post">
+  <h2>Search Filters</h2>
   <label>Name</label></br>
-  <input type="text" name="display_name" value=' . $displayNameDefault . '>
+  <input class="displayName" type="text" size="50" name="display_name" value=' . $displayNameDefault . '>
   </br>' . $specialtyFilterHTML . '<label>Proximity</label>
   </br>
   <span>With in</span>
@@ -106,7 +107,7 @@ function civicrm_contact_directory_shortcode($atts) {
   <span>miles of</span>
   <input size="20" type="text" name="location" value=' . $locationDefault . '>
   </br>
-  <input type="submit" name="gg" value="Search">
+  <input class="searchButton" type="submit" name="gg" value="Search">
   </form>';
 
   if (isset($_GET['cid'])) {
