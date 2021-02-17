@@ -17,10 +17,6 @@
  margin-bottom: 0px;
 }
 
-.civicontact a h3 {
- color: #c41230;
-}
-
 .civicontact a h3:hover {
  text-decoration: underline;
 }

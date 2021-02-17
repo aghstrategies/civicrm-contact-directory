@@ -56,6 +56,15 @@ function civicrm_contact_directory_shortcode($atts) {
     $specialtyFilter = $atts['specialty'];
   }
 
+  // Filter by Display NAme
+  if (!empty($atts['mainview'])) {
+    $mainView = $atts['mainview'];
+  }
+  else {
+    $mainView = NULL;
+  }
+
+
   if (isset($specialtyFilter)) {
     // Get Specialty Filter Options
     $specialtyOptions = '';
@@ -115,10 +124,13 @@ function civicrm_contact_directory_shortcode($atts) {
     $searchForm = "";
     $filters['contact_id'] = $_GET['cid'];
   }
-
-  $resultsDiv = civicrm_contact_directory_results($filters, $groupToDisplay, $singleView, $specialtyFilter);
-
-  return "$searchForm $resultsDiv";
+  $resultsDiv = civicrm_contact_directory_results($filters, $groupToDisplay, $singleView, $specialtyFilter, $mainView);
+  if ($atts['search'] == 'no') {
+    return "$resultsDiv";
+  }
+  else {
+    return "$searchForm $resultsDiv";
+  }
 }
 
 /**
@@ -126,7 +138,7 @@ function civicrm_contact_directory_shortcode($atts) {
  * @param  array $filters  filters to search on
  * @return string          formatted html to be displayed
  */
-function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $singleView = NULL, $specialtyFilter = NULL) {
+function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $singleView = NULL, $specialtyFilter = NULL, $mainView) {
   $oopsSomethingDidNotWork = [];
 
   civicrm_initialize();
@@ -231,7 +243,7 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
   }
   if (!empty($contacts['values'])) {
     foreach ($contacts['values'] as $contactId => $contactDetails) {
-      $formattedResults .= civicrm_contact_directory_format_contact($contactDetails, $context, $singleView);
+      $formattedResults .= civicrm_contact_directory_format_contact($contactDetails, $context, $singleView, $mainView);
     }
   }
   else {
@@ -250,12 +262,14 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
  * @param  string $context        single (to display just one contact) or directory (for the full listing)
  * @return string                 formatted html to be displayed
  */
-function civicrm_contact_directory_format_contact($contactDetails, $context, $singleView = NULL) {
+function civicrm_contact_directory_format_contact($contactDetails, $context, $singleView = NULL, $mainView = NULL) {
   $displayName = "<h3>{$contactDetails['display_name']}</h3>";
   $singleViewDetails = '';
 
   // Format Single card entries
   if ($context == 'single' && $singleView) {
+    $addotionalDetails = civicrm_contact_directory_message_template($singleView, $contactDetails['contact_id']);
+
     try {
       $msgTemplate = civicrm_api3('MessageTemplate', 'getsingle', ['id' => $singleView]);
     }
@@ -283,13 +297,13 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
         // we should consider adding groupName and valueName here
         'CRM_Core_BAO_MessageTemplate'
       );
-      $singleViewDetails .= CRM_Utils_Token::replaceContactTokens($msgTemplate['msg_html'], $contact, FALSE, $tokens['html'], FALSE, TRUE);
+      $singleViewDetails .= $addotionalDetails;
     }
 
     $url = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
     $singleViewDetails .= "<div><a href='$url'>Back to directory listing</a></div>";
   }
-  else {
+  elseif ($singleView) {
     $displayName = "<a href='{$_SERVER['REQUEST_URI']}?cid={$contactDetails['contact_id']}'>$displayName</a>";
   }
   if (!empty($contactDetails['city']) && !empty($contactDetails['state_province'])) {
@@ -298,16 +312,57 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
   else {
     $addressLine = "{$contactDetails['city']} {$contactDetails['state_province']} {$contactDetails['postal_code']}";
   }
+  if ($mainView == NULL) {
+    //Format Address line
+    return "<div class='civicontact'>
+      <div>{$displayName}</div>
+      <div>{$contactDetails['street_address']}</div>
+      <div>{$contactDetails['supplemental_address_1']}</div>
+      <div>{$addressLine}</div>
+      <div>{$contactDetails['phone']}</div>
+      $singleViewDetails
+    </div>";
+  }
+  else {
+    $contactInfo = civicrm_contact_directory_message_template($mainView, $contactDetails['contact_id']);
+    return "<div class='civicontact'>$contactInfo</div>";
+  }
 
-  //Format Address line
-  return "<div class='civicontact'>
-    <div>{$displayName}</div>
-    <div>{$contactDetails['street_address']}</div>
-    <div>{$contactDetails['supplemental_address_1']}</div>
-    <div>{$addressLine}</div>
-    <div>{$contactDetails['phone']}</div>
-    $singleViewDetails
-  </div>";
+}
+
+function civicrm_contact_directory_message_template($templateId, $contactId) {
+  $result = '';
+  try {
+    $msgTemplate = civicrm_api3('MessageTemplate', 'getsingle', ['id' => $templateId]);
+  }
+  catch (CiviCRM_API3_Exception $e) {
+    $error = $e->getMessage();
+    CRM_Core_Error::debug_log_message(ts('API Error while finding contacts %1', array(
+      'domain' => 'civicrm-contact-directory',
+      1 => $error,
+    )));
+  }
+
+  if (!empty($msgTemplate['msg_html'])) {
+    $mailing = new CRM_Mailing_BAO_Mailing();
+    $mailing->body_html = $msgTemplate['msg_html'];
+    $tokens = $mailing->getTokens();
+    $returnProperties = [];
+    $contactParams = ['contact_id' => $contactId];
+    foreach ($tokens['html']['contact'] as $name) {
+      $returnProperties[$name] = 1;
+    }
+
+    list($contact) = CRM_Utils_Token::getTokenDetails($contactParams,
+      $returnProperties,
+      FALSE, FALSE, NULL,
+      CRM_Utils_Token::flattenTokens($tokens),
+      // we should consider adding groupName and valueName here
+      'CRM_Core_BAO_MessageTemplate'
+    );
+    $result .= CRM_Utils_Token::replaceContactTokens($msgTemplate['msg_html'], $contact, FALSE, $tokens['html'], FALSE, TRUE);
+  }
+  return $result;
 }
 
 /**

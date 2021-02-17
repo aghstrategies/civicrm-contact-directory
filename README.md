@@ -8,6 +8,8 @@ CiviCRM Contact Directory
 + group - IF you would like to limit the results to a specific group enter that group id.
 + singleview - IF you would like to display additional information when viewing a single contact create a message template formatted as you would like it to be and add the id with this attribute.
 + specialty - IF you would like to include a Specialty filter include the custom_field options list you are interested in having end users filter on.
++ mainview - IF you would like to customize how results are displayed you can configure a message template using contact tokens and set the id here. If you do not, it defaults to the display name and address
++ search - If you set the search to "no" no search filters will be displayed
 
 ## Directory Description
 
@@ -16,7 +18,7 @@ CiviCRM Contact Directory
 * Proximity search
 * IF a specialty attribute is included in the shortcode
 
-### Results listing should include:
+### Default Results listing should include:
 * Display Name
 * Street Address
 * Supplemental Address 1
