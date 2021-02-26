@@ -1,3 +1,8 @@
+div.civicontact {
+ width: 400px;
+ display: inline-block;
+}
+
 .civiDirectoryForm {
   border-bottom: lightgrey solid 1px;
   padding: 10px;
