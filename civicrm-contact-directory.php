@@ -36,7 +36,7 @@ function civicrm_contact_directory_shortcode($atts) {
   civicrm_initialize();
 
   // Used to set the default for the display name field
-  $locationDefault = $distanceDefault = $displayNameDefault = $specialtyFilterHTML = '';
+  $displayNameFilter  = $proximityFilter = $locationDefault = $distanceDefault = $displayNameDefault = $specialtyFilterHTML = '';
 
   // Compile filters (if any are sent)
   $filters = [];
@@ -56,12 +56,19 @@ function civicrm_contact_directory_shortcode($atts) {
     $specialtyFilter = $atts['specialty'];
   }
 
-  // Filter by Display NAme
+  if (!empty($atts['displaynamefilter'])) {
+    $displayNameFilter = $atts['displaynamefilter'];
+  }
+  // Filter by Display Name
   if (!empty($atts['mainview'])) {
     $mainView = $atts['mainview'];
   }
   else {
     $mainView = NULL;
+  }
+
+  if (!empty($atts['proximityfilter'])) {
+    $proximityFilter = $atts['proximityfilter'];
   }
 
 
@@ -127,20 +134,26 @@ function civicrm_contact_directory_shortcode($atts) {
     }
   }
 
-  $searchForm = '<form class="civiDirectoryForm" method = "post">
-  <h2>Search Filters</h2>
-  <label>Name</label></br>
-  <input class="displayName" type="text" size="50" name="display_name" value=' . $displayNameDefault . '>
-  </br>' . $specialtyFilterHTML . '
-  <label>Proximity</label>
-  </br>
-  <span>With in</span>
-  <input size="7" type="text" name="distance" value=' . $distanceDefault . '>
-  <span>miles of</span>
-  <input size="20" type="text" name="location" value=' . $locationDefault . '>
-  </br>
-  <input class="searchButton" type="submit" name="gg" value="Search">
-  </form>';
+  $searchForm = '<form class="civiDirectoryForm" method = "post"><h2>Search Filters</h2>';
+  if ($displayNameFilter == 1) {
+    $searchForm .= '  <label>Name</label></br>
+      <input class="displayName" type="text" size="50" name="display_name" value=' . $displayNameDefault . '>
+      </br>';
+  }
+
+  $searchForm .= $specialtyFilterHTML;
+
+  if ($proximityFilter == 1) {
+    $searchForm = $searchForm . '  <label>Proximity</label>
+      </br>
+      <span>With in</span>
+      <input size="7" type="text" name="distance" value=' . $distanceDefault . '>
+      <span>miles of</span>
+      <input size="20" type="text" name="location" value=' . $locationDefault . '>
+      </br>';
+  }
+
+  $searchForm .= '<input class="searchButton" type="submit" name="gg" value="Search"></form>';
 
   if (isset($_GET['cid'])) {
     // If a cid is in the url DO NOT show the search form
