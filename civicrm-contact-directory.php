@@ -80,10 +80,31 @@ function civicrm_contact_directory_shortcode($atts) {
           $specialtyOptions .= "<option value={$id}>{$label}</option>";
         }
       }
+
+      // get specialty field label
+      try {
+        $specialtyLabel = civicrm_api3('Contact', 'getfield', [
+          'name' => $specialtyFilter,
+          'action' => "create",
+        ]);
+      }
+      catch (CiviCRM_API3_Exception $e) {
+        $error = $e->getMessage();
+        CRM_Core_Error::debug_log_message(ts('API Error while finding contacts %1', array(
+          'domain' => 'civicrm-contact-directory',
+          1 => $error,
+        )));
+      }
     }
-    $specialtyFilterHTML = '<label>Specialty</label></br>
+
+    // Set sepcialty field label
+    $sLabel = 'Specialty';
+    if (isset($specialtyLabel['values']['label'])) {
+      $sLabel = $specialtyLabel['values']['label'];
+    }
+    $specialtyFilterHTML = '<label>' . $sLabel . '</label></br>
     <select name="' . $specialtyFilter .'" id="' . $specialtyFilter . '" class="specialty">
-      <option value="">Choose Specialty</option>' . $specialtyOptions . '
+      <option value="">- Choose ' . $sLabel . ' - </option>' . $specialtyOptions . '
     </select>
     </br>';
   }
@@ -99,6 +120,7 @@ function civicrm_contact_directory_shortcode($atts) {
     if (isset($_POST['location'])) {
       $locationDefault = $filters['location'] = $_POST['location'];
     }
+
     // Send the specialty filter
     if (isset($_POST[$specialtyFilter])) {
       $filters[$specialtyFilter] = $_POST[$specialtyFilter];
@@ -109,7 +131,8 @@ function civicrm_contact_directory_shortcode($atts) {
   <h2>Search Filters</h2>
   <label>Name</label></br>
   <input class="displayName" type="text" size="50" name="display_name" value=' . $displayNameDefault . '>
-  </br>' . $specialtyFilterHTML . '<label>Proximity</label>
+  </br>' . $specialtyFilterHTML . '
+  <label>Proximity</label>
   </br>
   <span>With in</span>
   <input size="7" type="text" name="distance" value=' . $distanceDefault . '>
