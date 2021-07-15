@@ -230,7 +230,7 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
     'is_deleted' => 0,
     'options' => [
       'limit' => "",
-      'sort' => "display_name asc",
+      'sort' => "sort_name asc",
     ],
   ];
 
