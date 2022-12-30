@@ -12,6 +12,7 @@ CiviCRM Contact Directory
 + search - If you set the search to "no" no search filters will be displayed
 + displaynamefilter - Include a filter by name
 + proximityfilter - Include a proximity filter
++ map - Set to 1 or true to include a map
 
 ## Directory Description
 
