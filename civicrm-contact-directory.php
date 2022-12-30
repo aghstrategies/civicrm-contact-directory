@@ -8,7 +8,7 @@ Author: AGH Strategies, LLC
 Author URI: http://aghstrategies.com/
  */
 /*
- *	Copyright 2013-2015 AGH Strategies, LLC	(email : info@aghstrategies.com)
+ *	Copyright 2013-2022 AGH Strategies, LLC	(email : info@aghstrategies.com)
  *
  *	This program is free software; you can redistribute it and/or modify
  *	it under the terms of the GNU Affero General Public License as published by
@@ -39,7 +39,7 @@ function civicrm_contact_directory_shortcode($atts) {
   $displayNameFilter  = $proximityFilter = $locationDefault = $distanceDefault = $displayNameDefault = $specialtyFilterHTML = '';
 
   // Compile filters (if any are sent)
-  $filters = [];
+  $filters = $locations = $myLocation = [];
 
   // Parameter for group of contacts to be displayed in the directory
   if (!empty($atts['group'])) {
@@ -71,6 +71,9 @@ function civicrm_contact_directory_shortcode($atts) {
     $proximityFilter = $atts['proximityfilter'];
   }
 
+  if (!empty($atts['group_by'])) {
+    $filters['group_by'] = $atts['group_by'];
+  }
 
   if (isset($specialtyFilter)) {
     // Get Specialty Filter Options
@@ -160,7 +163,21 @@ function civicrm_contact_directory_shortcode($atts) {
     $searchForm = "";
     $filters['contact_id'] = $_GET['cid'];
   }
-  $resultsDiv = civicrm_contact_directory_results($filters, $groupToDisplay, $singleView, $specialtyFilter, $mainView);
+  list($resultsDiv, $locations, $myLocation) = civicrm_contact_directory_results($filters, $groupToDisplay, $singleView, $specialtyFilter, $mainView);
+
+  //add mapping option, but not for a single card
+  if (!empty($atts['map'] && empty($filters['contact_id']))) {
+    // send results to js for mapping
+    wp_register_script('map_script', plugin_dir_url( __FILE__ ) . 'js/map.js', array('jquery', 'underscore'));
+    wp_localize_script('map_script', 'locations', $locations);
+    wp_localize_script('map_script', 'mylocation', $myLocation);
+    wp_enqueue_script('map_script', plugin_dir_url( __FILE__ ) . 'js/map.js' );
+    wp_enqueue_script('openLayers', 'https://cdnjs.cloudflare.com/ajax/libs/openlayers/2.13.1/OpenLayers.js');
+
+    $resultsDiv = '<div id="osm_map" style="width: 580px; height: 400px"></div>' . $resultsDiv;
+  }
+
+
   if ($atts['search'] == 'no') {
     return "$resultsDiv";
   }
@@ -176,6 +193,8 @@ function civicrm_contact_directory_shortcode($atts) {
  */
 function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $singleView = NULL, $specialtyFilter = NULL, $mainView) {
   $oopsSomethingDidNotWork = [];
+  $locations = [];
+  $myLocation = civicrm_contact_directory_calculate_mylocation($filters);
 
   civicrm_initialize();
 
@@ -278,8 +297,31 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
     )));
   }
   if (!empty($contacts['values'])) {
-    foreach ($contacts['values'] as $contactId => $contactDetails) {
-      $formattedResults .= civicrm_contact_directory_format_contact($contactDetails, $context, $singleView, $mainView);
+    //if we set a group_by filter, set that up here.
+    if (!empty($filters['group_by']) && $context != 'single') {
+      foreach ($contacts['values'] as $contactId => $contactDetails) {
+        $groupedContacts[$contactDetails[$filters['group_by']]][$contactId] = $contactDetails;
+      }
+      foreach ($groupedContacts as $header => $group) {
+        //specialty processing for state/province headers
+        if ($filters['group_by'] == 'state_province') {
+          $stateProvinceName = \Civi\Api4\StateProvince::get(FALSE)
+            ->addSelect('name')
+            ->addWhere('abbreviation', '=', $header)
+            ->setLimit(1)
+            ->execute();
+          $header = $stateProvinceName[0]['name'];
+        }
+        $formattedResults .= '<h2>' . $header . '</h2>';
+        foreach ($group as $groupedContactId => $groupedContactDetails) {
+          $formattedResults .= civicrm_contact_directory_format_contact($groupedContactDetails, $context, $singleView, $mainView, $locations);
+        }
+      }
+    }
+    else {
+      foreach ($contacts['values'] as $contactId => $contactDetails) {
+        $formattedResults .= civicrm_contact_directory_format_contact($contactDetails, $context, $singleView, $mainView, $locations);
+      }
     }
   }
   else {
@@ -289,7 +331,7 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
     $formattedResults = "<div class='error'>{$oopsSomethingDidNotWork['error_message']}</div>";
   }
   $resultsDiv = "<div class='resultsDiv'>$formattedResults</div>";
-  return $resultsDiv;
+  return [$resultsDiv, $locations, $myLocation];
 }
 
 /**
@@ -298,13 +340,14 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
  * @param  string $context        single (to display just one contact) or directory (for the full listing)
  * @return string                 formatted html to be displayed
  */
-function civicrm_contact_directory_format_contact($contactDetails, $context, $singleView = NULL, $mainView = NULL) {
+function civicrm_contact_directory_format_contact($contactDetails, $context, $singleView = NULL, $mainView = NULL, &$locations) {
   $displayName = "<h3>{$contactDetails['display_name']}</h3>";
   $singleViewDetails = '';
+  $locations[$contactDetails['id']] = civicrm_contact_directory_contact_location($contactDetails);
 
   // Format Single card entries
   if ($context == 'single' && $singleView) {
-    $addotionalDetails = civicrm_contact_directory_message_template($singleView, $contactDetails['contact_id']);
+    $additionalDetails = civicrm_contact_directory_message_template($singleView, $contactDetails['contact_id']);
 
     try {
       $msgTemplate = civicrm_api3('MessageTemplate', 'getsingle', ['id' => $singleView]);
@@ -333,7 +376,7 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
         // we should consider adding groupName and valueName here
         'CRM_Core_BAO_MessageTemplate'
       );
-      $singleViewDetails .= $addotionalDetails;
+      $singleViewDetails .= $additionalDetails;
     }
 
     $url = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
@@ -476,4 +519,105 @@ function civicrm_contact_directory_get_proximity($distance, $lat, $long) {
     }
   }
   return $contactsInRange;
+}
+
+function civicrm_contact_directory_calculate_mylocation($params) {
+
+  // If a location is entered try and map it
+  if (!empty($params['distance']) && !empty($params['location'])) {
+    $proximityFromLocationData = [
+      'street_address' => $params['location'],
+      'country_id' => 1228,
+    ];
+    CRM_Core_BAO_Address::addGeocoderData($proximityFromLocationData);
+
+    // If the location has been mapped return coordinates
+    if (isset($proximityFromLocationData['geo_code_1'])
+    && isset($proximityFromLocationData['geo_code_2'])
+    && $proximityFromLocationData['geo_code_1'] != NULL
+    && $proximityFromLocationData['geo_code_1'] != NULL) {
+      $myLocation = [
+        'lat' => $proximityFromLocationData['geo_code_1'],
+        'long' => $proximityFromLocationData['geo_code_2'],
+        'entered' => 'yes',
+        'is_error' => 0,
+      ];
+      if (!is_numeric($params['distance'])) {
+        $myLocation['is_error'] = 1;
+        $myLocation['error_message'] = 'Distance must be a number';
+      }
+    }
+
+    // If the location cannot be mapped return error message
+    else {
+      $myLocation = [
+        'is_error' => 1,
+        'error_message' => "Could Not Calculate proximity based on the location entered.",
+      ];
+    }
+  }
+
+  // Validate that both location and distance have been entered
+  elseif (!empty($params['distance']) && empty($params['location'])) {
+    $myLocation = [
+      'long' => -100.372127,
+      'lat' => 38.891033,
+      'entered' => 'no',
+      'is_error' => 1,
+      'error_message' => "To calculate proximity please enter a location to calculate the distance from."
+    ];
+  }
+
+  elseif (empty($params['distance']) && !empty($params['location'])) {
+    $myLocation = [
+      'long' => -100.372127,
+      'lat' => 38.891033,
+      'entered' => 'no',
+      'is_error' => 1,
+      'error_message' => "To calculate proximity please enter a number into the distance field."
+    ];
+  }
+
+  // IF no location is entered return coordinates of the center of the continental US to be used for centering the map.
+  elseif (empty($params['distance']) && empty($params['location'])) {
+    $myLocation = ['long' => -100.372127, 'lat' => 38.891033, 'entered' => 'no', 'is_error' => 0];
+  }
+  return $myLocation;
+}
+
+function civicrm_contact_directory_contact_location($contactDetails) {
+  $locationArray = [];
+  $locationData = [
+    'street_address' => $contactDetails['street_address'],
+    'city' => $contactDetails['city'],
+    'state_province_id' => $contactDetails['state_province_id'],
+    'postal_code' => $contactDetails['postal_code'],
+    'country_id' => 1228
+  ];
+  CRM_Core_BAO_Address::addGeocoderData($locationData);
+
+  $locationArray['lat'] = $locationData['geo_code_1'];
+  $locationArray['long'] = $locationData['geo_code_2'];
+  //this sets the content for the map popups
+  //@TODO this can definitely be refactored with what's above, but for now it's
+  //a copy/paste because I am running out of time for map popups
+  if (!empty($contactDetails['city']) && !empty($contactDetails['state_province'])) {
+    $addressLine = "{$contactDetails['city']}, {$contactDetails['state_province']} {$contactDetails['postal_code']}";
+  }
+  else {
+    $addressLine = "{$contactDetails['city']} {$contactDetails['state_province']} {$contactDetails['postal_code']}";
+  }
+  $displayName = "<h3>{$contactDetails['display_name']}</h3>";
+  $displayName = "<a href='{$_SERVER['REQUEST_URI']}?cid={$contactDetails['contact_id']}'>$displayName</a>";
+  $locationArray['text'] = "<div class='civicontact'>
+    <div>{$displayName}</div>
+    <div>{$contactDetails['street_address']}</div>
+    <div>{$contactDetails['supplemental_address_1']}</div>
+    <div>{$addressLine}</div>
+    <div>{$contactDetails['phone']}</div>
+  </div>";
+  //set the map pin image URL
+  $locationArray['logoLink'] = plugin_dir_url( __FILE__ ) . '/map_pin.png';
+
+  return $locationArray;
 }
