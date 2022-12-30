@@ -12,7 +12,8 @@ CiviCRM Contact Directory
 + search - If you set the search to "no" no search filters will be displayed
 + displaynamefilter - Include a filter by name
 + proximityfilter - Include a proximity filter
-+ map - Set to 1 or true to include a map
++ map (BETA) - Set to 1 or true to include a map
++ group_by (BETA) - add a group_by field. Must be a valid field the in the api call for the contacts. group_by will print h2 headers and group contacts by this field. Tested with 'state_province' only.
 
 ## Directory Description
 

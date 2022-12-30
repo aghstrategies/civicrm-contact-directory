@@ -71,6 +71,9 @@ function civicrm_contact_directory_shortcode($atts) {
     $proximityFilter = $atts['proximityfilter'];
   }
 
+  if (!empty($atts['group_by'])) {
+    $filters['group_by'] = $atts['group_by'];
+  }
 
   if (isset($specialtyFilter)) {
     // Get Specialty Filter Options
@@ -294,8 +297,31 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
     )));
   }
   if (!empty($contacts['values'])) {
-    foreach ($contacts['values'] as $contactId => $contactDetails) {
-      $formattedResults .= civicrm_contact_directory_format_contact($contactDetails, $context, $singleView, $mainView, $locations);
+    //if we set a group_by filter, set that up here.
+    if (!empty($filters['group_by'])) {
+      foreach ($contacts['values'] as $contactId => $contactDetails) {
+        $groupedContacts[$contactDetails[$filters['group_by']]][$contactId] = $contactDetails;
+      }
+      foreach ($groupedContacts as $header => $group) {
+        //specialty processing for state/province headers
+        if ($filters['group_by'] == 'state_province') {
+          $stateProvinceName = \Civi\Api4\StateProvince::get(FALSE)
+            ->addSelect('name')
+            ->addWhere('abbreviation', '=', $header)
+            ->setLimit(1)
+            ->execute();
+          $header = $stateProvinceName[0]['name'];
+        }
+        $formattedResults .= '<h2>' . $header . '</h2>';
+        foreach ($group as $groupedContactId => $groupedContactDetails) {
+          $formattedResults .= civicrm_contact_directory_format_contact($groupedContactDetails, $context, $singleView, $mainView, $locations);
+        }
+      }
+    }
+    else {
+      foreach ($contacts['values'] as $contactId => $contactDetails) {
+        $formattedResults .= civicrm_contact_directory_format_contact($contactDetails, $context, $singleView, $mainView, $locations);
+      }
     }
   }
   else {
