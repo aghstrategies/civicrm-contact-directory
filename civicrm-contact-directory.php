@@ -165,8 +165,8 @@ function civicrm_contact_directory_shortcode($atts) {
   }
   list($resultsDiv, $locations, $myLocation) = civicrm_contact_directory_results($filters, $groupToDisplay, $singleView, $specialtyFilter, $mainView);
 
-  //add mapping option
-  if (!empty($atts['map'])) {
+  //add mapping option, but not for a single card
+  if (!empty($atts['map'] && empty($filters['contact_id']))) {
     // send results to js for mapping
     wp_register_script('map_script', plugin_dir_url( __FILE__ ) . 'js/map.js', array('jquery', 'underscore'));
     wp_localize_script('map_script', 'locations', $locations);
@@ -298,7 +298,7 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
   }
   if (!empty($contacts['values'])) {
     //if we set a group_by filter, set that up here.
-    if (!empty($filters['group_by'])) {
+    if (!empty($filters['group_by']) && $context != 'single') {
       foreach ($contacts['values'] as $contactId => $contactDetails) {
         $groupedContacts[$contactDetails[$filters['group_by']]][$contactId] = $contactDetails;
       }
@@ -347,7 +347,7 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
 
   // Format Single card entries
   if ($context == 'single' && $singleView) {
-    $addotionalDetails = civicrm_contact_directory_message_template($singleView, $contactDetails['contact_id']);
+    $additionalDetails = civicrm_contact_directory_message_template($singleView, $contactDetails['contact_id']);
 
     try {
       $msgTemplate = civicrm_api3('MessageTemplate', 'getsingle', ['id' => $singleView]);
@@ -376,7 +376,7 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
         // we should consider adding groupName and valueName here
         'CRM_Core_BAO_MessageTemplate'
       );
-      $singleViewDetails .= $addtionalDetails;
+      $singleViewDetails .= $additionalDetails;
     }
 
     $url = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
