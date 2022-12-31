@@ -51,6 +51,14 @@ function civicrm_contact_directory_shortcode($atts) {
     $singleView = $atts['singleview'];
   }
 
+  if (!empty($atts['relationship'])) {
+    $relationshipType = $atts['relationship'];
+  }
+
+  if (!empty($atts['relationshipview'])) {
+    $relationshipTemplate = $atts['relationshipview'];
+  }
+
   // Include the specialty filter?
   if (!empty($atts['specialty'])) {
     $specialtyFilter = $atts['specialty'];
@@ -163,7 +171,7 @@ function civicrm_contact_directory_shortcode($atts) {
     $searchForm = "";
     $filters['contact_id'] = $_GET['cid'];
   }
-  list($resultsDiv, $locations, $myLocation) = civicrm_contact_directory_results($filters, $groupToDisplay, $singleView, $specialtyFilter, $mainView);
+  list($resultsDiv, $locations, $myLocation) = civicrm_contact_directory_results($filters, $groupToDisplay, $singleView, $specialtyFilter, $mainView, $relationshipView, $relationshipType);
 
   //add mapping option, but not for a single card
   if (!empty($atts['map'] && empty($filters['contact_id']))) {
@@ -191,7 +199,7 @@ function civicrm_contact_directory_shortcode($atts) {
  * @param  array $filters  filters to search on
  * @return string          formatted html to be displayed
  */
-function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $singleView = NULL, $specialtyFilter = NULL, $mainView) {
+function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $singleView = NULL, $specialtyFilter = NULL, $mainView, $relationshipView = NULL, $relationshipType = NULL) {
   $oopsSomethingDidNotWork = [];
   $locations = [];
   $myLocation = civicrm_contact_directory_calculate_mylocation($filters);
@@ -302,6 +310,7 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
       foreach ($contacts['values'] as $contactId => $contactDetails) {
         $groupedContacts[$contactDetails[$filters['group_by']]][$contactId] = $contactDetails;
       }
+      $groupedContacts = ksort($groupedContacts);
       foreach ($groupedContacts as $header => $group) {
         //specialty processing for state/province headers
         if ($filters['group_by'] == 'state_province') {
@@ -314,13 +323,27 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
         }
         $formattedResults .= '<h2>' . $header . '</h2>';
         foreach ($group as $groupedContactId => $groupedContactDetails) {
-          $formattedResults .= civicrm_contact_directory_format_contact($groupedContactDetails, $context, $singleView, $mainView, $locations);
+          $formattedResults .= civicrm_contact_directory_format_contact($groupedContactDetails, $context, $singleView, $mainView, $locations, $relationshipView);
         }
       }
     }
     else {
       foreach ($contacts['values'] as $contactId => $contactDetails) {
-        $formattedResults .= civicrm_contact_directory_format_contact($contactDetails, $context, $singleView, $mainView, $locations);
+        $formattedResults .= civicrm_contact_directory_format_contact($contactDetails, $context, $singleView, $mainView, $locations, $relationshipView);
+        //add the relationship view to single cards if set
+        if ($relationshipView && $relationshipType && $context == 'single') {
+          $relationships = \Civi\Api4\Relationship::get(FALSE)
+            ->addWhere('relationship_type_id', '=', $relationshipType)
+            ->addWhere('is_active', '=', TRUE)
+            ->addWhere('contact_id_a', '=', $contactId)
+            ->execute();
+          foreach ($relationships as $relationship) {
+            $newSearchParams = $searchParams;
+            $newSearchParams['contact_id'] = $relationship['contact_id_b'];
+            $relatedContactDetails = civicrm_api3('Contact', 'get', $newSearchParams);
+            $formattedResults .= civicrm_contact_directory_format_contact($relatedContactDetails, $context, $singleView, $mainView, $locations, $relationshipView);
+          }
+        }
       }
     }
   }
@@ -340,17 +363,54 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
  * @param  string $context        single (to display just one contact) or directory (for the full listing)
  * @return string                 formatted html to be displayed
  */
-function civicrm_contact_directory_format_contact($contactDetails, $context, $singleView = NULL, $mainView = NULL, &$locations) {
+function civicrm_contact_directory_format_contact($contactDetails, $context, $singleView = NULL, $mainView = NULL, &$locations, $relationshipView = NULL) {
   $displayName = "<h3>{$contactDetails['display_name']}</h3>";
   $singleViewDetails = '';
   $locations[$contactDetails['id']] = civicrm_contact_directory_contact_location($contactDetails);
 
   // Format Single card entries
-  if ($context == 'single' && $singleView) {
+  if ($context == 'single' && $singleView && !$relationshipView) {
     $additionalDetails = civicrm_contact_directory_message_template($singleView, $contactDetails['contact_id']);
 
     try {
       $msgTemplate = civicrm_api3('MessageTemplate', 'getsingle', ['id' => $singleView]);
+    }
+    catch (CiviCRM_API3_Exception $e) {
+      $error = $e->getMessage();
+      CRM_Core_Error::debug_log_message(ts('API Error while finding contacts %1', array(
+        'domain' => 'civicrm-contact-directory',
+        1 => $error,
+      )));
+    }
+    if (!empty(!empty($msgTemplate['msg_html']))) {
+      $mailing = new CRM_Mailing_BAO_Mailing();
+      $mailing->body_html = $msgTemplate['msg_html'];
+      $tokens = $mailing->getTokens();
+      $returnProperties = [];
+      $contactParams = ['contact_id' => $contactDetails['contact_id']];
+      foreach ($tokens['html']['contact'] as $name) {
+        $returnProperties[$name] = 1;
+      }
+
+      list($contact) = CRM_Utils_Token::getTokenDetails($contactParams,
+        $returnProperties,
+        FALSE, FALSE, NULL,
+        CRM_Utils_Token::flattenTokens($tokens),
+        // we should consider adding groupName and valueName here
+        'CRM_Core_BAO_MessageTemplate'
+      );
+      $singleViewDetails .= $additionalDetails;
+    }
+
+    $url = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
+    $singleViewDetails .= "<div><a href='$url'>Back to directory listing</a></div>";
+  }
+  //relationship card format
+  elseif ($context == 'single' && $relationshipView) {
+    $additionalDetails = civicrm_contact_directory_message_template($relationshipView, $contactDetails['contact_id']);
+
+    try {
+      $msgTemplate = civicrm_api3('MessageTemplate', 'getsingle', ['id' => $relationshipView]);
     }
     catch (CiviCRM_API3_Exception $e) {
       $error = $e->getMessage();
