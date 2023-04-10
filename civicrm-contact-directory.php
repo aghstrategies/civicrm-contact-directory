@@ -241,6 +241,8 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
     "phone",
     "state_province_id",
     "state_province",
+    "geo_code_1",
+    "geo_code_2",
   ];
 
   // Set the default Search Params
@@ -594,10 +596,10 @@ function civicrm_contact_directory_contact_location($contactDetails) {
     'postal_code' => $contactDetails['postal_code'],
     'country_id' => 1228
   ];
-  CRM_Core_BAO_Address::addGeocoderData($locationData);
+  //CRM_Core_BAO_Address::addGeocoderData($locationData);
 
-  $locationArray['lat'] = $locationData['geo_code_1'];
-  $locationArray['long'] = $locationData['geo_code_2'];
+  $locationArray['lat'] = $contactDetails['geo_code_1'];
+  $locationArray['long'] = $contactDetails['geo_code_2'];
   //this sets the content for the map popups
   //@TODO this can definitely be refactored with what's above, but for now it's
   //a copy/paste because I am running out of time for map popups
