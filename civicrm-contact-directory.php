@@ -56,7 +56,7 @@ function civicrm_contact_directory_shortcode($atts) {
   }
 
   if (!empty($atts['relationshipview'])) {
-    $relationshipTemplate = $atts['relationshipview'];
+    $relationshipView = $atts['relationshipview'];
   }
 
   // Include the specialty filter?
@@ -312,7 +312,7 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
       foreach ($contacts['values'] as $contactId => $contactDetails) {
         $groupedContacts[$contactDetails[$filters['group_by']]][$contactId] = $contactDetails;
       }
-      $groupedContacts = ksort($groupedContacts);
+      ksort($groupedContacts);
       foreach ($groupedContacts as $header => $group) {
         //specialty processing for state/province headers
         if ($filters['group_by'] == 'state_province') {
@@ -333,16 +333,19 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
       foreach ($contacts['values'] as $contactId => $contactDetails) {
         $formattedResults .= civicrm_contact_directory_format_contact($contactDetails, $context, $singleView, $mainView, $locations, $relationshipView);
         //add the relationship view to single cards if set
-        if ($relationshipView && $relationshipType && $context == 'single') {
+        if ($relationshipType && $context == 'single') {
           $relationships = \Civi\Api4\Relationship::get(FALSE)
             ->addWhere('relationship_type_id', '=', $relationshipType)
             ->addWhere('is_active', '=', TRUE)
-            ->addWhere('contact_id_a', '=', $contactId)
+            ->addWhere('contact_id_b', '=', $contactId)
             ->execute();
           foreach ($relationships as $relationship) {
             $newSearchParams = $searchParams;
-            $newSearchParams['contact_id'] = $relationship['contact_id_b'];
+            //if there was a group set, related contacts may not be in it
+            unset($newSearchParams['group']);
+            $newSearchParams['contact_id'] = $relationship['contact_id_a'];
             $relatedContactDetails = civicrm_api3('Contact', 'get', $newSearchParams);
+            $relatedContactDetails = reset($relatedContactDetails['values']);
             $formattedResults .= civicrm_contact_directory_format_contact($relatedContactDetails, $context, $singleView, $mainView, $locations, $relationshipView);
           }
         }
@@ -366,7 +369,12 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
  * @return string                 formatted html to be displayed
  */
 function civicrm_contact_directory_format_contact($contactDetails, $context, $singleView = NULL, $mainView = NULL, &$locations, $relationshipView = NULL) {
-  $displayName = "<h3>{$contactDetails['display_name']}</h3>";
+  if ($context != 'single') {
+    $displayName = '<a href="/find-a-breastfeeding-counselor/?cid=' . $contactDetails['contact_id'] .  '"><h3>' . $contactDetails['display_name'] . '</h3></a>';
+  }
+  else {
+    $displayName = '<h3>' . $contactDetails['display_name'] . '</h3>';
+  }
   $singleViewDetails = '';
   $locations[$contactDetails['id']] = civicrm_contact_directory_contact_location($contactDetails);
 
