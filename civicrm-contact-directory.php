@@ -346,7 +346,7 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
             $newSearchParams['contact_id'] = $relationship['contact_id_a'];
             $relatedContactDetails = civicrm_api3('Contact', 'get', $newSearchParams);
             $relatedContactDetails = reset($relatedContactDetails['values']);
-            $formattedResults .= civicrm_contact_directory_format_contact($relatedContactDetails, $context, $singleView, $mainView, $locations, $relationshipView);
+            $formattedResults .= civicrm_contact_directory_format_contact($relatedContactDetails, $context, $relationshipView, $mainView, $locations, $relationshipView);
           }
         }
       }
@@ -372,14 +372,14 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
   if ($context != 'single') {
     $displayName = '<a href="/find-a-breastfeeding-counselor/?cid=' . $contactDetails['contact_id'] .  '"><h3>' . $contactDetails['display_name'] . '</h3></a>';
   }
-  else {
+  elseif (!$singleView) {
     $displayName = '<h3>' . $contactDetails['display_name'] . '</h3>';
   }
   $singleViewDetails = '';
-  $locations[$contactDetails['id']] = civicrm_contact_directory_contact_location($contactDetails);
+  //$locations[$contactDetails['id']] = civicrm_contact_directory_contact_location($contactDetails);
 
   // Format Single card entries
-  if ($context == 'single' && $singleView && !$relationshipView) {
+  if ($context == 'single' && $singleView) {
     $additionalDetails = civicrm_contact_directory_message_template($singleView, $contactDetails['contact_id']);
 
     try {
@@ -413,10 +413,10 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
     }
 
     $url = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
-    $singleViewDetails .= "<div><a href='$url'>Back to directory listing</a></div>";
+    //$singleViewDetails .= "<div><a href='$url'>Back to directory listing</a></div>";
   }
   //relationship card format
-  elseif ($context == 'single' && $relationshipView) {
+  /*elseif ($context == 'single' && $relationshipView && $contactDetails['contact_id'] != $filters['contact_id']) {
     $additionalDetails = civicrm_contact_directory_message_template($relationshipView, $contactDetails['contact_id']);
 
     try {
@@ -451,7 +451,7 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
 
     $url = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
     $singleViewDetails .= "<div><a href='$url'>Back to directory listing</a></div>";
-  }
+  }*/
   elseif ($singleView) {
     $displayName = "<a href='{$_SERVER['REQUEST_URI']}?cid={$contactDetails['contact_id']}'>$displayName</a>";
   }
@@ -462,15 +462,17 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
     $addressLine = "{$contactDetails['city']} {$contactDetails['state_province']} {$contactDetails['postal_code']}";
   }
   if ($mainView == NULL) {
-    //Format Address line
-    return "<div class='civicontact'>
-      <div>{$displayName}</div>
-      <div>{$contactDetails['street_address']}</div>
-      <div>{$contactDetails['supplemental_address_1']}</div>
-      <div>{$addressLine}</div>
-      <div>{$contactDetails['phone']}</div>
-      $singleViewDetails
-    </div>";
+    $defaultText = '';
+    if (!$singleView) {
+      //Format Address line
+      $defaultText = "<div class='civicontact'>
+        <div>{$displayName}</div>
+        <div>{$contactDetails['street_address']}</div>
+        <div>{$contactDetails['supplemental_address_1']}</div>
+        <div>{$addressLine}</div>
+        <div>{$contactDetails['phone']}</div></div>";
+      }
+    return $defaultText . $singleViewDetails;
   }
   else {
     $contactInfo = civicrm_contact_directory_message_template($mainView, $contactDetails['contact_id']);
