@@ -325,7 +325,7 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
         }
         $formattedResults .= '<h2>' . $header . '</h2>';
         foreach ($group as $groupedContactId => $groupedContactDetails) {
-          $formattedResults .= civicrm_contact_directory_format_contact($groupedContactDetails, $context, $singleView, $mainView, $locations, $relationshipView);
+          $formattedResults .= civicrm_contact_directory_format_contact($groupedContactDetails, $context, NULL, $mainView, $locations, $relationshipView);
         }
       }
     }
@@ -376,7 +376,7 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
     $displayName = '<h3>' . $contactDetails['display_name'] . '</h3>';
   }
   $singleViewDetails = '';
-  //$locations[$contactDetails['id']] = civicrm_contact_directory_contact_location($contactDetails);
+  $locations[$contactDetails['id']] = civicrm_contact_directory_contact_location($contactDetails);
 
   // Format Single card entries
   if ($context == 'single' && $singleView) {
