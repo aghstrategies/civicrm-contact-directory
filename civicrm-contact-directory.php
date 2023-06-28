@@ -59,6 +59,10 @@ function civicrm_contact_directory_shortcode($atts) {
     $relationshipView = $atts['relationshipview'];
   }
 
+  if (!empty($atts['eventview'])) {
+    $eventView = $atts['eventview'];
+  }
+
   // Include the specialty filter?
   if (!empty($atts['specialty'])) {
     $specialtyFilter = $atts['specialty'];
@@ -171,7 +175,7 @@ function civicrm_contact_directory_shortcode($atts) {
     $searchForm = "";
     $filters['contact_id'] = $_GET['cid'];
   }
-  list($resultsDiv, $locations, $myLocation) = civicrm_contact_directory_results($filters, $groupToDisplay, $singleView, $specialtyFilter, $mainView, $relationshipView, $relationshipType);
+  list($resultsDiv, $locations, $myLocation) = civicrm_contact_directory_results($filters, $groupToDisplay, $singleView, $specialtyFilter, $mainView, $relationshipView, $relationshipType, $eventView);
 
   //add mapping option, but not for a single card
   if (!empty($atts['map'] && empty($filters['contact_id']))) {
@@ -199,7 +203,7 @@ function civicrm_contact_directory_shortcode($atts) {
  * @param  array $filters  filters to search on
  * @return string          formatted html to be displayed
  */
-function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $singleView = NULL, $specialtyFilter = NULL, $mainView, $relationshipView = NULL, $relationshipType = NULL) {
+function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $singleView = NULL, $specialtyFilter = NULL, $mainView, $relationshipView = NULL, $relationshipType = NULL, $eventView = NULL) {
   $oopsSomethingDidNotWork = [];
   $locations = [];
   $myLocation = civicrm_contact_directory_calculate_mylocation($filters);
@@ -347,6 +351,22 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
             $relatedContactDetails = civicrm_api3('Contact', 'get', $newSearchParams);
             $relatedContactDetails = reset($relatedContactDetails['values']);
             $formattedResults .= civicrm_contact_directory_format_contact($relatedContactDetails, $context, $relationshipView, $mainView, $locations, $relationshipView);
+          }
+        }
+        if ($eventView && $context == 'single') {
+          $today = date('m-d-Y');
+          $formattedResults .= '<h3>Chapter Events:</h3>';
+          $events = \Civi\Api4\Event::get(FALSE)
+            ->addSelect('id', 'title', 'start_date')
+            ->addWhere('Chapter_Event_Details.Event_Chapter_Reference.id', '=', $searchParams['contact_id'])
+            ->addWhere('is_active', '=', TRUE)
+            ->addWhere('start_date', '>', $today)
+            ->execute();
+          foreach ($events as $event) {
+            $startDate = explode(' ', $event['start_date'])[0];
+            $eventId = $event['id'];
+            $url = CRM_Utils_System::url('civicrm/event/info', "reset=1&id=$eventId");
+            $formattedResults .= '<p>' . $event['title'] . ' - ' . $startDate . ' - <a href="' . $url . '">More Info</a></p>';
           }
         }
       }
