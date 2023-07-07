@@ -476,10 +476,10 @@ function civicrm_contact_directory_format_contact($contactDetails, $context, $si
     $displayName = "<a href='{$_SERVER['REQUEST_URI']}?cid={$contactDetails['contact_id']}'>$displayName</a>";
   }
   if (!empty($contactDetails['city']) && !empty($contactDetails['state_province'])) {
-    $addressLine = "{$contactDetails['city']}, {$contactDetails['state_province']} {$contactDetails['postal_code']}";
+    $addressLine = "{$contactDetails['city']}, {$contactDetails['state_province']}";
   }
   else {
-    $addressLine = "{$contactDetails['city']} {$contactDetails['state_province']} {$contactDetails['postal_code']}";
+    $addressLine = "{$contactDetails['city']} {$contactDetails['state_province']}";
   }
   if ($mainView == NULL) {
     $defaultText = '';
@@ -531,6 +531,14 @@ function civicrm_contact_directory_message_template($templateId, $contactId) {
       // we should consider adding groupName and valueName here
       'CRM_Core_BAO_MessageTemplate'
     );
+    //deal with counselor email types (no token available)
+    $counselorEmails = \Civi\Api4\Email::get(FALSE)
+      ->addSelect('email')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addWhere('location_type_id', '=', 6)
+      ->execute();
+    $msgTemplate['msg_html'] = str_replace('{contact.email.counselor}', $counselorEmails[0]['email'], $msgTemplate['msg_html']);
+
     $result .= CRM_Utils_Token::replaceContactTokens($msgTemplate['msg_html'], $contact, FALSE, $tokens['html'], FALSE, TRUE);
   }
   return $result;
