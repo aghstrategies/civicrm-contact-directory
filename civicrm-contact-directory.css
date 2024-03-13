@@ -34,3 +34,23 @@ select.specialty,
 select.specialty {
  height: 36px;
 }
+
+
+/* Accordion */
+.ui-accordion .ui-state-active {
+  background-color: var(--nv-primary-accent);
+  border-color: var(--nv-primary-accent);
+}
+
+.ui-accordion h2.ui-accordion-header {
+font-size: var(--h2fontsize);
+  font-weight: var(--h2fontweight);
+  line-height: var(--h2lineheight);
+  letter-spacing: var(--h2letterspacing);
+  text-transform: var(--h2texttransform)
+}
+
+.ui-accordion-content {
+  display: flex;
+  flex-wrap: wrap;
+}

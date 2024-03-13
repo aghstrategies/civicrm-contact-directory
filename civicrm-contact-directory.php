@@ -33,6 +33,10 @@ wp_enqueue_style('civicrm-contact-directory-css', plugins_url('civicrm-contact-d
  * Function to Create Shortcode for directory
  */
 function civicrm_contact_directory_shortcode($atts) {
+  wp_enqueue_script('jquery-ui-accordion');
+  wp_enqueue_style('jquery-ui-style', 'https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css');
+  wp_enqueue_script('civicrm-contact-accordion-js', plugins_url('js/accordion.js', __FILE__));
+
   civicrm_initialize();
 
   // Used to set the default for the display name field
@@ -327,10 +331,11 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
             ->execute();
           $header = $stateProvinceName[0]['name'];
         }
-        $formattedResults .= '<h2>' . $header . '</h2>';
+        $formattedResults .= '<h2>' . $header . '</h2><div>';
         foreach ($group as $groupedContactId => $groupedContactDetails) {
           $formattedResults .= civicrm_contact_directory_format_contact($groupedContactDetails, $context, NULL, $mainView, $locations, $relationshipView);
         }
+        $formattedResults .= '</div>';
       }
     }
     else {
