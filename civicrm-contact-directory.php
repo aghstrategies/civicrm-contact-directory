@@ -190,7 +190,7 @@ function civicrm_contact_directory_shortcode($atts) {
     wp_enqueue_script('map_script', plugin_dir_url( __FILE__ ) . 'js/map.js' );
     wp_enqueue_script('openLayers', 'https://cdnjs.cloudflare.com/ajax/libs/openlayers/2.13.1/OpenLayers.js');
 
-    $resultsDiv = '<div id="osm_map" style="width: 580px; height: 400px"></div>' . $resultsDiv;
+    $resultsDiv = '<div id="osm_map" style="/*width: 580px; height: 400px*/"></div>' . $resultsDiv;
   }
 
 

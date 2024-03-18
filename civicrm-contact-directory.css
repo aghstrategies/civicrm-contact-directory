@@ -54,3 +54,14 @@ font-size: var(--h2fontsize);
   display: flex;
   flex-wrap: wrap;
 }
+
+#osm_map {
+  width: 100%;
+  height: 400px;
+}
+
+@media screen and (min-width: 768px) {
+  #osm_map, .resultsDiv {
+    width: 50%;
+  }
+}
