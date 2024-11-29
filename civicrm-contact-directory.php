@@ -174,7 +174,7 @@ function civicrm_contact_directory_shortcode($atts) {
       </br>';
   }
 
-  $searchForm .= '<input class="searchButton" type="submit" name="gg" value="SEARCH">SEARCH</input></form>';
+  $searchForm .= '<input class="searchButton" type="submit" name="gg" value="SEARCH" style="font-size: 16px; font-weight: bold;" /></form>';
 
   if (isset($_GET['cid'])) {
     // If a cid is in the url DO NOT show the search form
