@@ -3,7 +3,7 @@
 Plugin Name: CiviCRM Contact Directory
 Plugin URI: https://git.aghstrategies.com/
 Description: Creates a shortcode to make a Directory of CiviCRM Contacts
-Version: 3.1
+Version: 3.1.1
 Author: AGH Strategies, LLC
 Author URI: http://aghstrategies.com/
  */
@@ -25,9 +25,11 @@ Author URI: http://aghstrategies.com/
  *	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA	02110-1301	USA
  **/
 
+define('CIVICRM_CONTACT_DIRECTORY_VERSION', '3.1.1');
+
 // Shortcode [civicrm_contact_directory]
 add_shortcode('civicrm_contact_directory', 'civicrm_contact_directory_shortcode');
-wp_enqueue_style('civicrm-contact-directory-css', plugins_url('civicrm-contact-directory.css', __FILE__));
+wp_enqueue_style('civicrm-contact-directory-css', plugins_url('civicrm-contact-directory.css', __FILE__), [], CIVICRM_CONTACT_DIRECTORY_VERSION);
 
 /**
  * Function to Create Shortcode for directory
@@ -35,7 +37,7 @@ wp_enqueue_style('civicrm-contact-directory-css', plugins_url('civicrm-contact-d
 function civicrm_contact_directory_shortcode($atts) {
   wp_enqueue_script('jquery-ui-accordion');
   wp_enqueue_style('jquery-ui-style', 'https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css');
-  wp_enqueue_script('civicrm-contact-accordion-js', plugins_url('js/accordion.js', __FILE__));
+  wp_enqueue_script('civicrm-contact-accordion-js', plugins_url('js/accordion.js', __FILE__), [], CIVICRM_CONTACT_DIRECTORY_VERSION);
 
   civicrm_initialize();
 
@@ -187,10 +189,10 @@ function civicrm_contact_directory_shortcode($atts) {
     wp_register_script('map_script', plugin_dir_url( __FILE__ ) . 'js/map.js', array('jquery', 'underscore'));
     wp_localize_script('map_script', 'locations', $locations);
     wp_localize_script('map_script', 'mylocation', $myLocation);
-    wp_enqueue_script('map_script', plugin_dir_url( __FILE__ ) . 'js/map.js' );
+    wp_enqueue_script('map_script', plugin_dir_url( __FILE__ ) . 'js/map.js' , [], CIVICRM_CONTACT_DIRECTORY_VERSION);
     wp_enqueue_script('openLayers', 'https://cdnjs.cloudflare.com/ajax/libs/openlayers/2.13.1/OpenLayers.js');
 
-    $resultsDiv = '<div id="osm_map" style="/*width: 580px; height: 400px*/"></div>' . $resultsDiv;
+    $resultsDiv = '<div id="osm_map"></div>' . $resultsDiv;
   }
 
 

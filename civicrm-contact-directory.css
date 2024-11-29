@@ -43,11 +43,13 @@ select.specialty {
 }
 
 .ui-accordion h2.ui-accordion-header {
-font-size: var(--h2fontsize);
+  font-size: var(--h3fontsize);
   font-weight: var(--h2fontweight);
-  line-height: var(--h2lineheight);
-  letter-spacing: var(--h2letterspacing);
-  text-transform: var(--h2texttransform)
+  line-height: var(--h3lineheight);
+  letter-spacing: var(--h3letterspacing);
+  text-transform: var(--h2texttransform);
+  padding-top: .25em;
+  padding-bottom: .25em;
 }
 
 .ui-accordion-content {
