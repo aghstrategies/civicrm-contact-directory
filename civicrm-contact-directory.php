@@ -220,7 +220,7 @@ function civicrm_contact_directory_results($filters, $groupToDisplay = NULL, $si
   if (!empty($filters['distance']) && !empty($filters['location'])) {
     // get lat/long of location (throw error if it cant be calculated)
     $proximityFromLocationData = [
-      'street_address' => $filters['location'],
+      'postal_code' => "{$filters['location']}, USA",
     ];
     CRM_Core_BAO_Address::addGeocoderData($proximityFromLocationData);
     if (!empty($proximityFromLocationData['geo_code_1']) && !empty($proximityFromLocationData['geo_code_2'])) {
