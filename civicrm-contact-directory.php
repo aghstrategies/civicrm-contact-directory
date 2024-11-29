@@ -155,7 +155,7 @@ function civicrm_contact_directory_shortcode($atts) {
     }
   }
 
-  $searchForm = '<form class="civiDirectoryForm" method = "post"><h2>Search Filters</h2>';
+  $searchForm = '<form class="civiDirectoryForm" method = "post"><h2>Find Your Local BC</h2>';
   if ($displayNameFilter == 1) {
     $searchForm .= '  <label>Name</label></br>
       <input class="displayName" type="text" size="50" name="display_name" value=' . $displayNameDefault . '>
@@ -165,16 +165,16 @@ function civicrm_contact_directory_shortcode($atts) {
   $searchForm .= $specialtyFilterHTML;
 
   if ($proximityFilter == 1) {
-    $searchForm = $searchForm . '  <label>Proximity</label>
+    $searchForm = $searchForm . '
       </br>
       <span>Within</span>
       <input size="7" type="text" placeholder="Miles" name="distance" value=' . $distanceDefault . '>
-      <span>miles of</span>
+      <span>of</span>
       <input size="20" type="text" placeholder="Zip Code" name="location" value=' . $locationDefault . '>
       </br>';
   }
 
-  $searchForm .= '<input class="searchButton" type="submit" name="gg" value="Search"/></form>';
+  $searchForm .= '<input class="searchButton" type="submit" name="gg" value="SEARCH" /></form>';
 
   if (isset($_GET['cid'])) {
     // If a cid is in the url DO NOT show the search form
