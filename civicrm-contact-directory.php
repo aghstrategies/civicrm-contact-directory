@@ -167,14 +167,14 @@ function civicrm_contact_directory_shortcode($atts) {
   if ($proximityFilter == 1) {
     $searchForm = $searchForm . '  <label>Proximity</label>
       </br>
-      <span>With in</span>
-      <input size="7" type="text" name="distance" value=' . $distanceDefault . '>
+      <span>Within</span>
+      <input size="7" type="text" placeholder="Miles" name="distance" value=' . $distanceDefault . '>
       <span>miles of</span>
-      <input size="20" type="text" name="location" value=' . $locationDefault . '>
+      <input size="20" type="text" placeholder="Zip Code" name="location" value=' . $locationDefault . '>
       </br>';
   }
 
-  $searchForm .= '<input class="searchButton" type="submit" name="gg" value="Search"></form>';
+  $searchForm .= '<input class="searchButton" type="submit" name="gg" value="Search"/></form>';
 
   if (isset($_GET['cid'])) {
     // If a cid is in the url DO NOT show the search form
