@@ -91,7 +91,6 @@
  }
 
   function setMapOptions(map, mylocation, lonLat) {
-
     var lonLat = new OpenLayers.LonLat(mylocation.long, mylocation.lat).transform(
       new OpenLayers.Projection("EPSG:4326"),
       map.getProjectionObject()
@@ -114,7 +113,7 @@
     });
 
     if (mylocation.long != -100.372127 && mylocation.lat != 38.891033) {
-      createMarker(map, markers, lonLat, "My Location", 'default');
+      createMarker(map, markers, lonLat, "My Location", 'https://breastfeedingusa.org/wp-content/uploads/2024/05/breastfeedingUSA_r4-copy_Mark-Alone-White.png');
     }
 
     var newBound = markers.getDataExtent();
