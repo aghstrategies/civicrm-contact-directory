@@ -91,7 +91,6 @@
  }
 
   function setMapOptions(map, mylocation, lonLat) {
-
     var lonLat = new OpenLayers.LonLat(mylocation.long, mylocation.lat).transform(
       new OpenLayers.Projection("EPSG:4326"),
       map.getProjectionObject()
