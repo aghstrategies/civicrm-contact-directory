@@ -539,6 +539,23 @@ function civicrm_contact_directory_message_template($templateId, $contactId) {
       // we should consider adding groupName and valueName here
       'CRM_Core_BAO_MessageTemplate'
     );
+
+    $websites = \Civi\Api4\Website::get(FALSE)
+      ->addSelect('url')
+      ->addWhere('contact_id', '=', $contactId)
+      ->setLimit(1)
+      ->execute();
+    $msgTemplate['msg_html'] = str_replace('{contact.website.counselor}', $websites[0]['phone'], $msgTemplate['msg_html']);
+
+    // deal with counselor phone
+    $counselorPhones = \Civi\Api4\Phone::get(FALSE)
+      ->addSelect('phone')
+      ->addWhere('contact_id', '=', $contactId)
+      ->addWhere('location_type_id', '=', 6)
+      ->addWhere('phone_type_id', '=', 1)
+      ->execute();
+    $msgTemplate['msg_html'] = str_replace('{contact.phone.counselor}', $counselorPhones[0]['phone'], $msgTemplate['msg_html']);
+
     //deal with counselor email types (no token available)
     $counselorEmails = \Civi\Api4\Email::get(FALSE)
       ->addSelect('email')
