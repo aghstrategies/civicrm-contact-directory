@@ -545,8 +545,12 @@ function civicrm_contact_directory_message_template($templateId, $contactId) {
       ->addWhere('contact_id', '=', $contactId)
       ->setLimit(1)
       ->execute();
-    $msgTemplate['msg_html'] = str_replace('{contact.website.counselor}', $websites[0]['url'], $msgTemplate['msg_html']);
-
+    if ($websites[0]['url']) {
+    $msgTemplate['msg_html'] = str_replace('{contact.website.counselor}', "<h3><strong>Chapter Websites</strong></h3><a target='_blank' href='{$websites[0]['url']}'>{$websites[0]['url']}</a>", $msgTemplate['msg_html']);
+    }
+    else {
+        $msgTemplate['msg_html'] = str_replace('{contact.website.counselor}', $websites[0]['url'], $msgTemplate['msg_html']);
+    }
     // deal with counselor phone
     $counselorPhones = \Civi\Api4\Phone::get(FALSE)
       ->addSelect('phone')
