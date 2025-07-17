@@ -62,6 +62,22 @@ select.specialty {
   height: 400px;
 }
 
+/* Dashboard styling */
+.civicrm-user h3 {
+ font-weight: 400;
+}
+
+.civicrm-user h3::before {
+  background-image: url("/wp-content/uploads/2023/04/design_element_6@4x.png");
+  background-size: 33px;
+  width: 34px;
+  height: 34px;
+  content: "";
+  display: inline-block;
+  background-repeat: no-repeat;
+  margin-right: 5px;
+}
+
 @media screen and (min-width: 768px) {
   #osm_map, .resultsDiv {
     width: 50%;
