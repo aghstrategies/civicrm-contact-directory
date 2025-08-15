@@ -389,7 +389,7 @@ function civicrm_contact_directory_message_template($templateId, $contactId) {
       $returnProperties[$name] = 1;
     }
 
-    list($contact) = CRM_Utils_Token::getTokenDetails($contactParams,
+    list($contact) = civicrm_contact_directory_getTokenDetails($contactParams,
       $returnProperties,
       FALSE, FALSE, NULL,
       CRM_Utils_Token::flattenTokens($tokens),
@@ -400,6 +400,85 @@ function civicrm_contact_directory_message_template($templateId, $contactId) {
   }
   return $result;
 }
+
+function civicrm_contact_directory_getTokenDetails(
+    $contactIDs,
+    $returnProperties = NULL,
+    $skipOnHold = TRUE,
+    $skipDeceased = TRUE,
+    $extraParams = NULL,
+    $tokens = [],
+    $className = NULL,
+    $jobID = NULL
+  ) {
+    $params = [];
+    foreach ($contactIDs as $contactID) {
+      $params[] = [
+        CRM_Core_Form::CB_PREFIX . $contactID,
+        '=',
+        1,
+        0,
+        0,
+      ];
+    }
+
+    // if return properties are not passed then get all return properties
+    if (empty($returnProperties)) {
+      $fields = array_merge(array_keys(CRM_Contact_BAO_Contact::exportableFields()),
+        ['display_name', 'checksum', 'contact_id']
+      );
+      foreach ($fields as $val) {
+        // The unavailable fields are not available as tokens, do not have a one-2-one relationship
+        // with contacts and are expensive to resolve.
+        // @todo see CRM-17253 - there are some other fields (e.g note) that should be excluded
+        // and upstream calls to this should populate return properties.
+        $unavailableFields = ['group', 'tag'];
+        if (!in_array($val, $unavailableFields)) {
+          $returnProperties[$val] = 1;
+        }
+      }
+    }
+
+    $custom = [];
+    foreach ($returnProperties as $name => $dontCare) {
+      $cfID = CRM_Core_BAO_CustomField::getKeyID($name);
+      if ($cfID) {
+        $custom[] = $cfID;
+      }
+    }
+
+    [$contactDetails] = CRM_Contact_BAO_Query::apiQuery($params, $returnProperties, NULL, NULL, 0, count($contactIDs), TRUE, FALSE, TRUE, CRM_Contact_BAO_Query::MODE_CONTACTS, NULL, TRUE);
+
+    foreach ($contactIDs as $contactID) {
+      if (array_key_exists($contactID, $contactDetails)) {
+        if (!empty($contactDetails[$contactID]['preferred_communication_method'])
+        ) {
+          $communicationPreferences = [];
+          foreach ((array) $contactDetails[$contactID]['preferred_communication_method'] as $val) {
+            if ($val) {
+              $communicationPreferences[$val] = CRM_Core_PseudoConstant::getLabel('CRM_Contact_DAO_Contact', 'preferred_communication_method', $val);
+            }
+          }
+          $contactDetails[$contactID]['preferred_communication_method'] = implode(', ', $communicationPreferences);
+        }
+
+        foreach ($custom as $cfID) {
+          if (isset($contactDetails[$contactID]["custom_{$cfID}"])) {
+            $contactDetails[$contactID]["custom_{$cfID}"] = CRM_Core_BAO_CustomField::displayValue($contactDetails[$contactID]["custom_{$cfID}"], $cfID);
+          }
+        }
+
+        // special case for greeting replacement
+        foreach (['email_greeting', 'postal_greeting', 'addressee'] as $val) {
+          if (!empty($contactDetails[$contactID][$val])) {
+            $contactDetails[$contactID][$val] = $contactDetails[$contactID]["{$val}_display"];
+          }
+        }
+      }
+    }
+
+    return [$contactDetails];
+  }
 
 /**
  * Get the custom fields to display on cards
